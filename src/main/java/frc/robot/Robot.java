@@ -3,17 +3,13 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -21,7 +17,7 @@ public class Robot extends TimedRobot {
   /*
    * Autonomous selection options.
    */
-  private static final String kNothingAuto = "do nothing";
+  private final String kNothingAuto = "do nothing";
   private static final String kConeAuto = "cone";
   private static final String kCubeAuto = "cube";
   private String m_autoSelected;
@@ -34,10 +30,10 @@ public class Robot extends TimedRobot {
    * Change kBrushed to kBrushless if you are using NEO's.
    * Use the appropriate other class if you are using different controllers.
    */
-  CANSparkMax driveLeftSpark = new CANSparkMax(1, MotorType.kBrushed);
-  CANSparkMax driveRightSpark = new CANSparkMax(2, MotorType.kBrushed);
-  VictorSPX driveLeftVictor = new VictorSPX(3);
-  VictorSPX driveRightVictor = new VictorSPX(4);
+  CANSparkMax driveLeftSpark = new CANSparkMax(0, MotorType.kBrushless);
+  CANSparkMax backDriveLeftSpark = new CANSparkMax(1, MotorType.kBrushless);
+  CANSparkMax driveRightSpark = new CANSparkMax(2, MotorType.kBrushless);
+  CANSparkMax backDriveRightSpark = new CANSparkMax(3, MotorType.kBrushless);
 
   /*
    * Mechanism motor controller instances.
@@ -49,8 +45,8 @@ public class Robot extends TimedRobot {
    * The arm is a NEO on Everybud.
    * The intake is a NEO 550 on Everybud.
    */
-  CANSparkMax arm = new CANSparkMax(5, MotorType.kBrushless);
-  CANSparkMax intake = new CANSparkMax(6, MotorType.kBrushless);
+  CANSparkMax arm = new CANSparkMax(20, MotorType.kBrushless);
+  CANSparkMax intake = new CANSparkMax(30, MotorType.kBrushed);
 
   /**
    * The starter code uses the most generic joystick class.
@@ -61,7 +57,7 @@ public class Robot extends TimedRobot {
    * mode (switch set to X on the bottom) or a different controller
    * that you feel is more comfortable.
    */
-  Joystick j = new Joystick(0);
+  XboxController controller = new XboxController(0);
 
   /*
    * Magic numbers. Use these to adjust settings.
@@ -135,9 +131,9 @@ public class Robot extends TimedRobot {
      * if it is going the wrong way. Repeat for the other 3 motors.
      */
     driveLeftSpark.setInverted(false);
-    driveLeftVictor.setInverted(false);
+    backDriveLeftSpark.setInverted(false);
     driveRightSpark.setInverted(false);
-    driveRightVictor.setInverted(false);
+    backDriveRightSpark.setInverted(false);
 
     /*
      * Set the arm and intake to brake mode to help hold position.
@@ -175,9 +171,9 @@ public class Robot extends TimedRobot {
     // see note above in robotInit about commenting these out one by one to set
     // directions.
     driveLeftSpark.set(left);
-    driveLeftVictor.set(ControlMode.PercentOutput, left);
+    backDriveLeftSpark.set(left);
     driveRightSpark.set(right);
-    driveRightVictor.set(ControlMode.PercentOutput, right);
+    backDriveRightSpark.set(right);
   }
 
   /**
@@ -212,7 +208,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putNumber("Time (seconds)", Timer.getFPGATimestamp());
+    //SmartDashboard.putNumber("Time (seconds)", Timer.getFPGATimestamp());
   }
 
   double autonomousStartTime;
@@ -220,10 +216,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    driveLeftSpark.setIdleMode(IdleMode.kBrake);
-    driveLeftVictor.setNeutralMode(NeutralMode.Brake);
-    driveRightSpark.setIdleMode(IdleMode.kBrake);
-    driveRightVictor.setNeutralMode(NeutralMode.Brake);
+    driveLeftSpark.setIdleMode(IdleMode.kCoast);
+    backDriveLeftSpark.setIdleMode(IdleMode.kCoast);
+    driveRightSpark.setIdleMode(IdleMode.kCoast);
+    backDriveRightSpark.setIdleMode(IdleMode.kCoast);
 
     m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
@@ -282,9 +278,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     driveLeftSpark.setIdleMode(IdleMode.kCoast);
-    driveLeftVictor.setNeutralMode(NeutralMode.Coast);
+    backDriveLeftSpark.setIdleMode(IdleMode.kCoast);
     driveRightSpark.setIdleMode(IdleMode.kCoast);
-    driveRightVictor.setNeutralMode(NeutralMode.Coast);
+    backDriveRightSpark.setIdleMode(IdleMode.kCoast);
 
     lastGamePiece = NOTHING;
   }
@@ -292,10 +288,10 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     double armPower;
-    if (j.getRawButton(7)) {
+    if (controller.getAButton()) {
       // lower the arm
       armPower = -ARM_OUTPUT_POWER;
-    } else if (j.getRawButton(5)) {
+    } else if (controller.getBButton()) {
       // raise the arm
       armPower = ARM_OUTPUT_POWER;
     } else {
@@ -306,12 +302,12 @@ public class Robot extends TimedRobot {
   
     double intakePower;
     int intakeAmps;
-    if (j.getRawButton(8)) {
+    if (controller.getXButton()) {
       // cube in or cone out
       intakePower = INTAKE_OUTPUT_POWER;
       intakeAmps = INTAKE_CURRENT_LIMIT_A;
       lastGamePiece = CUBE;
-    } else if (j.getRawButton(6)) {
+    } else if (controller.getYButton()) {
       // cone in or cube out
       intakePower = -INTAKE_OUTPUT_POWER;
       intakeAmps = INTAKE_CURRENT_LIMIT_A;
@@ -332,6 +328,6 @@ public class Robot extends TimedRobot {
      * Negative signs here because the values from the analog sticks are backwards
      * from what we want. Forward returns a negative when we want it positive.
      */
-    setDriveMotors(-j.getRawAxis(1), -j.getRawAxis(2));
+    setDriveMotors(-(controller.getLeftTriggerAxis() - controller.getRightTriggerAxis()), controller.getLeftY());
   }
 }
