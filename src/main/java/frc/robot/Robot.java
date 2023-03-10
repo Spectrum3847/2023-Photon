@@ -20,6 +20,9 @@ public class Robot extends TimedRobot {
   private final String kNothingAuto = "do nothing";
   private static final String kConeAuto = "cone";
   private static final String kCubeAuto = "cube";
+  private static final String kTaxiAuto = "taxi";
+  private static final String kConeBalanceAuto = "coneBalance";
+  private static final String kCubeBalanceAuto = "cubeBalance";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -66,22 +69,22 @@ public class Robot extends TimedRobot {
   /**
    * How many amps the arm motor can use.
    */
-  static final int ARM_CURRENT_LIMIT_A = 20;
+  static final int ARM_CURRENT_LIMIT_A = 22;
 
   /**
    * Percent output to run the arm up/down at
    */
-  static final double ARM_OUTPUT_POWER = 0.4;
+  static final double ARM_OUTPUT_POWER = 0.45;
 
   /**
    * How many amps the intake can use while picking up
    */
-  static final int INTAKE_CURRENT_LIMIT_A = 25;
+  static final int INTAKE_CURRENT_LIMIT_A = 65;
 
   /**
    * How many amps the intake can use while holding
    */
-  static final int INTAKE_HOLD_CURRENT_LIMIT_A = 5;
+  static final int INTAKE_HOLD_CURRENT_LIMIT_A = 25;
 
   /**
    * Percent output for intaking
@@ -91,7 +94,7 @@ public class Robot extends TimedRobot {
   /**
    * Percent output for holding
    */
-  static final double INTAKE_HOLD_POWER = 0.07;
+  static final double INTAKE_HOLD_POWER = 0.25;
 
   /**
    * Time to extend or retract arm in auto
@@ -101,17 +104,20 @@ public class Robot extends TimedRobot {
   /**
    * Time to throw game piece in auto
    */
-  static final double AUTO_THROW_TIME_S = 0.375;
+  static final double AUTO_THROW_TIME_S = 2;
 
   /**
    * Time to drive back in auto
    */
-  static final double AUTO_DRIVE_TIME = 6.0;
+  static final double AUTO_DRIVE_TIME = 8.0;
+  static final double AUTO_DRIVE_TIME_BALANCE = 6.0;
+  static final double AUTO_DRIVE_TIME_TAXI = 2.0;
 
   /**
    * Speed to drive backwards in auto
    */
-  static final double AUTO_DRIVE_SPEED = -0.25;
+  static final double AUTO_DRIVE_SPEED = 0.1;
+  static final double Auto_DRIVE_SPEED_BALANCE = 0.1;
 
   /**
    * This method is run once when the robot is first started up.
@@ -119,8 +125,11 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     m_chooser.setDefaultOption("do nothing", kNothingAuto);
+    m_chooser.addOption("taxi", kTaxiAuto);
     m_chooser.addOption("cone and mobility", kConeAuto);
     m_chooser.addOption("cube and mobility", kCubeAuto);
+    m_chooser.addOption("cone and balance", kConeBalanceAuto);
+    m_chooser.addOption("cube and balance", kCubeBalanceAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     /*
@@ -130,8 +139,8 @@ public class Robot extends TimedRobot {
      * to the set() methods. Push the joystick forward. Reverse the motor
      * if it is going the wrong way. Repeat for the other 3 motors.
      */
-    driveLeftSpark.setInverted(false);
-    backDriveLeftSpark.setInverted(false);
+    driveLeftSpark.setInverted(true);
+    backDriveLeftSpark.setInverted(true);
     driveRightSpark.setInverted(false);
     backDriveRightSpark.setInverted(false);
 
@@ -140,7 +149,7 @@ public class Robot extends TimedRobot {
      * If either one is reversed, change that here too. Arm out is defined
      * as positive, arm in is negative.
      */
-    arm.setInverted(true);
+    arm.setInverted(false);
     arm.setIdleMode(IdleMode.kBrake);
     arm.setSmartCurrentLimit(ARM_CURRENT_LIMIT_A);
     intake.setInverted(false);
@@ -224,10 +233,10 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
 
-    if (m_autoSelected == kConeAuto) {
-      autonomousIntakePower = INTAKE_OUTPUT_POWER;
-    } else if (m_autoSelected == kCubeAuto) {
+    if (m_autoSelected == kConeAuto || m_autoSelected == kConeBalanceAuto) {
       autonomousIntakePower = -INTAKE_OUTPUT_POWER;
+    } else if (m_autoSelected == kCubeAuto || m_autoSelected == kCubeBalanceAuto) {
+      autonomousIntakePower = INTAKE_OUTPUT_POWER;
     }
 
     autonomousStartTime = Timer.getFPGATimestamp();
@@ -244,7 +253,18 @@ public class Robot extends TimedRobot {
 
     double timeElapsed = Timer.getFPGATimestamp() - autonomousStartTime;
 
-    if (timeElapsed < ARM_EXTEND_TIME_S) {
+    if(m_autoSelected == kTaxiAuto){
+      if (timeElapsed < AUTO_DRIVE_TIME_TAXI) {
+        setArmMotor(0.0);
+        setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+        setDriveMotors(AUTO_DRIVE_SPEED, 0.0);
+      } else {
+        setArmMotor(0.0);
+        setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+        setDriveMotors(0.0, 0.0);
+      }
+    }
+    else if(m_autoSelected == kCubeAuto || m_autoSelected == kConeAuto){ if (timeElapsed < ARM_EXTEND_TIME_S) {
       setArmMotor(ARM_OUTPUT_POWER);
       setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
       setDriveMotors(0.0, 0.0);
@@ -260,6 +280,28 @@ public class Robot extends TimedRobot {
       setArmMotor(0.0);
       setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
       setDriveMotors(AUTO_DRIVE_SPEED, 0.0);
+    } else {
+      setArmMotor(0.0);
+      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);
+    }
+  }
+  else if (m_autoSelected == kCubeBalanceAuto || m_autoSelected == kConeBalanceAuto){
+    setArmMotor(ARM_OUTPUT_POWER);
+      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);
+    } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S) {
+      setArmMotor(0.0);
+      setIntakeMotor(autonomousIntakePower, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);
+    } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S + ARM_EXTEND_TIME_S) {
+      setArmMotor(-ARM_OUTPUT_POWER);
+      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);
+    } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S + ARM_EXTEND_TIME_S + AUTO_DRIVE_TIME_BALANCE) {
+      setArmMotor(0.0);
+      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(Auto_DRIVE_SPEED_BALANCE, 0.0);
     } else {
       setArmMotor(0.0);
       setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
@@ -328,6 +370,6 @@ public class Robot extends TimedRobot {
      * Negative signs here because the values from the analog sticks are backwards
      * from what we want. Forward returns a negative when we want it positive.
      */
-    setDriveMotors(-(controller.getLeftTriggerAxis() - controller.getRightTriggerAxis()), controller.getLeftY());
+    setDriveMotors(controller.getLeftY(), -(controller.getLeftTriggerAxis() - controller.getRightTriggerAxis()));
   }
 }
