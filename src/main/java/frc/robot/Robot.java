@@ -20,6 +20,8 @@ public class Robot extends TimedRobot {
   private final String kNothingAuto = "do nothing";
   private static final String kConeAuto = "cone";
   private static final String kCubeAuto = "cube";
+  private static final String kConeMobilityAuto = "coneMobility";
+  private static final String kCubeMobilityAuto = "cubeMobility";
   private static final String kTaxiAuto = "taxi";
   private static final String kConeBalanceAuto = "coneBalance";
   private static final String kCubeBalanceAuto = "cubeBalance";
@@ -60,7 +62,20 @@ public class Robot extends TimedRobot {
    * mode (switch set to X on the bottom) or a different controller
    * that you feel is more comfortable.
    */
-  XboxController controller = new XboxController(0);
+  XboxController pilotController = new XboxController(0);
+  XboxController operatorController = new XboxController(1);
+
+  //Method to stop deadzone on Y Right Stick controller
+  public double getPilotLeftY(){
+    double pilotControllerLeftY;
+    if(Math.abs(pilotController.getLeftY()) < 0.10) {
+      pilotControllerLeftY = 0;
+    }
+    else {
+      pilotControllerLeftY = pilotController.getLeftY();
+    }
+    return pilotControllerLeftY;
+  }
 
   /*
    * Magic numbers. Use these to adjust settings.
@@ -116,8 +131,8 @@ public class Robot extends TimedRobot {
   /**
    * Speed to drive backwards in auto
    */
-  static final double AUTO_DRIVE_SPEED = 0.1;
-  static final double Auto_DRIVE_SPEED_BALANCE = 0.1;
+  static final double AUTO_DRIVE_SPEED = 0.15;
+  static final double Auto_DRIVE_SPEED_BALANCE = 0.2;
 
   /**
    * This method is run once when the robot is first started up.
@@ -126,8 +141,10 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     m_chooser.setDefaultOption("do nothing", kNothingAuto);
     m_chooser.addOption("taxi", kTaxiAuto);
-    m_chooser.addOption("cone and mobility", kConeAuto);
-    m_chooser.addOption("cube and mobility", kCubeAuto);
+    m_chooser.addOption("cone", kConeAuto);
+    m_chooser.addOption("cube", kCubeAuto);
+    m_chooser.addOption("cone and mobility", kConeMobilityAuto);
+    m_chooser.addOption("cube and mobility", kCubeMobilityAuto);
     m_chooser.addOption("cone and balance", kConeBalanceAuto);
     m_chooser.addOption("cube and balance", kCubeBalanceAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
@@ -233,9 +250,9 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
 
-    if (m_autoSelected == kConeAuto || m_autoSelected == kConeBalanceAuto) {
+    if (m_autoSelected == kConeMobilityAuto || m_autoSelected == kConeBalanceAuto || m_autoSelected == kConeAuto) {
       autonomousIntakePower = -INTAKE_OUTPUT_POWER;
-    } else if (m_autoSelected == kCubeAuto || m_autoSelected == kCubeBalanceAuto) {
+    } else if (m_autoSelected == kCubeMobilityAuto || m_autoSelected == kCubeBalanceAuto || m_autoSelected == kCubeAuto) {
       autonomousIntakePower = INTAKE_OUTPUT_POWER;
     }
 
@@ -264,9 +281,27 @@ public class Robot extends TimedRobot {
         setDriveMotors(0.0, 0.0);
       }
     }
-    else if(m_autoSelected == kCubeAuto || m_autoSelected == kConeAuto){ if (timeElapsed < ARM_EXTEND_TIME_S) {
+    else if(m_autoSelected == kCubeAuto || m_autoSelected == kConeAuto){
+      if (timeElapsed < ARM_EXTEND_TIME_S) {
       setArmMotor(ARM_OUTPUT_POWER);
-      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setIntakeMotor(-autonomousIntakePower, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);
+    } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S) {
+      setArmMotor(0.0);
+      setIntakeMotor(autonomousIntakePower, INTAKE_CURRENT_LIMIT_A);
+      setDriveMotors(0.0, 0.0);}
+      else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S + ARM_EXTEND_TIME_S) {
+        setArmMotor(-ARM_OUTPUT_POWER);
+        setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+        setDriveMotors(0.0, 0.0);
+    } else{
+        setArmMotor(0.0);
+        setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+        setDriveMotors(0.0, 0.0);
+      }}
+    else if(m_autoSelected == kCubeMobilityAuto || m_autoSelected == kConeMobilityAuto){ if (timeElapsed < ARM_EXTEND_TIME_S) {
+      setArmMotor(ARM_OUTPUT_POWER);
+      setIntakeMotor(-autonomousIntakePower, INTAKE_CURRENT_LIMIT_A);
       setDriveMotors(0.0, 0.0);
     } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S) {
       setArmMotor(0.0);
@@ -288,7 +323,7 @@ public class Robot extends TimedRobot {
   }
   else if (m_autoSelected == kCubeBalanceAuto || m_autoSelected == kConeBalanceAuto){
     setArmMotor(ARM_OUTPUT_POWER);
-      setIntakeMotor(0.0, INTAKE_CURRENT_LIMIT_A);
+      setIntakeMotor(-autonomousIntakePower, INTAKE_CURRENT_LIMIT_A);
       setDriveMotors(0.0, 0.0);
     } else if (timeElapsed < ARM_EXTEND_TIME_S + AUTO_THROW_TIME_S) {
       setArmMotor(0.0);
@@ -330,10 +365,10 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     double armPower;
-    if (controller.getAButton()) {
+    if (operatorController.getAButton()) {
       // lower the arm
       armPower = -ARM_OUTPUT_POWER;
-    } else if (controller.getBButton()) {
+    } else if (operatorController.getBButton()) {
       // raise the arm
       armPower = ARM_OUTPUT_POWER;
     } else {
@@ -344,12 +379,12 @@ public class Robot extends TimedRobot {
   
     double intakePower;
     int intakeAmps;
-    if (controller.getXButton()) {
+    if (operatorController.getXButton()) {
       // cube in or cone out
       intakePower = INTAKE_OUTPUT_POWER;
       intakeAmps = INTAKE_CURRENT_LIMIT_A;
       lastGamePiece = CUBE;
-    } else if (controller.getYButton()) {
+    } else if (operatorController.getYButton()) {
       // cone in or cube out
       intakePower = -INTAKE_OUTPUT_POWER;
       intakeAmps = INTAKE_CURRENT_LIMIT_A;
@@ -370,6 +405,7 @@ public class Robot extends TimedRobot {
      * Negative signs here because the values from the analog sticks are backwards
      * from what we want. Forward returns a negative when we want it positive.
      */
-    setDriveMotors(controller.getLeftY(), -(controller.getLeftTriggerAxis() - controller.getRightTriggerAxis()));
+
+    setDriveMotors(getPilotLeftY(), -(pilotController.getLeftTriggerAxis() - pilotController.getRightTriggerAxis()));
   }
 }
