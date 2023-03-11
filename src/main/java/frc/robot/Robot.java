@@ -2,6 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
+//importing libraries
 package frc.robot;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
@@ -35,7 +36,7 @@ public class Robot extends TimedRobot {
    * Change kBrushed to kBrushless if you are using NEO's.
    * Use the appropriate other class if you are using different controllers.
    */
-  CANSparkMax driveLeftSpark = new CANSparkMax(0, MotorType.kBrushless);
+  CANSparkMax driveLeftSpark = new CANSparkMax(4, MotorType.kBrushless);
   CANSparkMax backDriveLeftSpark = new CANSparkMax(1, MotorType.kBrushless);
   CANSparkMax driveRightSpark = new CANSparkMax(2, MotorType.kBrushless);
   CANSparkMax backDriveRightSpark = new CANSparkMax(3, MotorType.kBrushless);
