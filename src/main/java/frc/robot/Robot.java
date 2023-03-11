@@ -125,14 +125,14 @@ public class Robot extends TimedRobot {
   /**
    * Time to drive back in auto
    */
-  static final double AUTO_DRIVE_TIME = 8.0;
+  static final double AUTO_DRIVE_TIME = 3.0;
   static final double AUTO_DRIVE_TIME_BALANCE = 6.0;
   static final double AUTO_DRIVE_TIME_TAXI = 2.0;
 
   /**
    * Speed to drive backwards in auto
    */
-  static final double AUTO_DRIVE_SPEED = 0.15;
+  static final double AUTO_DRIVE_SPEED = 0.3;
   static final double Auto_DRIVE_SPEED_BALANCE = 0.2;
 
   /**
