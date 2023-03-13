@@ -73,7 +73,14 @@ public class Robot extends TimedRobot {
       pilotControllerLeftY = 0;
     }
     else {
-      pilotControllerLeftY = pilotController.getLeftY();
+      if(pilotController.getAButton())
+      {
+        pilotControllerLeftY = pilotController.getLeftY()/10;  
+      }
+      else
+      {
+        pilotControllerLeftY = pilotController.getLeftY(); 
+      }
     }
     return pilotControllerLeftY;
   }
@@ -125,14 +132,14 @@ public class Robot extends TimedRobot {
   /**
    * Time to drive back in auto
    */
-  static final double AUTO_DRIVE_TIME = 3.0;
+  static final double AUTO_DRIVE_TIME = 4;
   static final double AUTO_DRIVE_TIME_BALANCE = 6.0;
   static final double AUTO_DRIVE_TIME_TAXI = 2.0;
 
   /**
    * Speed to drive backwards in auto
    */
-  static final double AUTO_DRIVE_SPEED = 0.3;
+  static final double AUTO_DRIVE_SPEED = 0.2;
   static final double Auto_DRIVE_SPEED_BALANCE = 0.2;
 
   /**
@@ -161,6 +168,11 @@ public class Robot extends TimedRobot {
     backDriveLeftSpark.setInverted(true);
     driveRightSpark.setInverted(false);
     backDriveRightSpark.setInverted(false);
+
+    driveLeftSpark.setSmartCurrentLimit(80);    
+    backDriveLeftSpark.setSmartCurrentLimit(80);
+    driveRightSpark.setSmartCurrentLimit(80);
+    backDriveRightSpark.setSmartCurrentLimit(80);
 
     /*
      * Set the arm and intake to brake mode to help hold position.
