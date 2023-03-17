@@ -74,15 +74,39 @@ public class Robot extends TimedRobot {
     }
     else {
       if(pilotController.getAButton())
+      //Slowmode for moving if A Button is pressed
       {
         pilotControllerLeftY = pilotController.getLeftY()/10;  
       }
+      else if(pilotController.getYButton())
+      {
+        pilotControllerLeftY = pilotController.getLeftY()/4;
+      }
       else
       {
-        pilotControllerLeftY = pilotController.getLeftY(); 
+        pilotControllerLeftY = pilotController.getLeftY()/2; 
       }
     }
     return pilotControllerLeftY;
+  }
+
+  //Method to stop turning when slow mode enabled
+  public double getTurningAmount(){
+    double turningAmount;
+    if(pilotController.getAButton())
+    //Slowmode for moving if A Button is pressed
+    {
+      turningAmount = 0;  
+    }
+    else if(pilotController.getYButton())
+    {
+      turningAmount = -(pilotController.getLeftTriggerAxis() - pilotController.getRightTriggerAxis())/6; 
+    }
+    else
+    {
+      turningAmount = -(pilotController.getLeftTriggerAxis() - pilotController.getRightTriggerAxis())/4; 
+    }
+    return turningAmount;
   }
 
   /*
@@ -168,6 +192,11 @@ public class Robot extends TimedRobot {
     backDriveLeftSpark.setInverted(true);
     driveRightSpark.setInverted(false);
     backDriveRightSpark.setInverted(false);
+
+    driveLeftSpark.setIdleMode(IdleMode.kBrake);
+    backDriveLeftSpark.setIdleMode(IdleMode.kBrake);
+    driveRightSpark.setIdleMode(IdleMode.kBrake);
+    backDriveRightSpark.setIdleMode(IdleMode.kBrake);
 
     driveLeftSpark.setSmartCurrentLimit(80);    
     backDriveLeftSpark.setSmartCurrentLimit(80);
@@ -419,6 +448,6 @@ public class Robot extends TimedRobot {
      * from what we want. Forward returns a negative when we want it positive.
      */
 
-    setDriveMotors(getPilotLeftY(), -(pilotController.getLeftTriggerAxis() - pilotController.getRightTriggerAxis()));
+    setDriveMotors(getPilotLeftY(), getTurningAmount());
   }
 }
